@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Weather Application</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #303f9f;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .current_city {
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            font-size: 16px;
+            margin-right: 10px;
+            width: 200px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            background-color: #1976d2;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Main Content Styles */
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .current-weather {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .city {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+            color: #333;
+        }
+
+        .details {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .temp {
+            font-size: 60px;
+            color: #1976d2;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .unit {
+            font-size: 24px;
+            vertical-align: top;
+            color: #333;
+        }
+
+        .weather-icon {
+            font-size: 60px;
+        }
+
+        /* Rain Animation */
+        .raindrop {
+            position: absolute;
+            font-size: 20px;
+            color: #2196f3;
+            opacity: 0.6;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* Footer Styles */
+        footer {
+            background-color: #303f9f;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #1976d2;
+        }
+
+        /* Responsive Styles */
+        @media only screen and (max-width: 600px) {
+            .current_city {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <form id="searchForm">
+            <input type="search" placeholder="Enter a city..." required class="current_city" id="cityInput">
+            <button type="submit" class="btn">Search</button>
+        </form>
+    </header>
+    <main>
+        <div class="current-weather">
+            <div>
+                <h1 class="city" id="cityName">Paris</h1>
+                <p class="details" id="weatherDetails">Saturday 15:32, moderate rain<br>Humidity: <strong>87%</strong>, Wind: <strong>7.2km/h</strong></p>
+            </div>
+            <div class="temp">
+                <span class="weather-icon" id="weatherIcon">☀️</span>
+                <span class="degree">14</span>
+                <span class="unit">°C</span>
+            </div>
+        </div>
+        <div class="rain" id="rain"></div>
+    </main>
+    <footer>
+        <p>This project was coded by <a href="#" target="_blank">Khanani Hlungwani</a> and is <a href="#" target="_blank">on GitHub</a> and <a href="#" target="_blank">hosted on Netlify</a></p>
+    </footer>
+
+    <script>
+        const apiKey = "8abedd953d36849def5606a6b3df0146"; // Your API key
+
+        window.onload = function () {
+            updateWeather("paris");
+            displayCurrentTime();
+        };
+
+        document.getElementById("searchForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            let cityName = document.getElementById("cityInput").value.toLowerCase();
+            updateWeather(cityName);
+        });
+
+        async function updateWeather(cityName) {
+            try {
+                const response = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}&units=metric`
+                );
+                const data = await response.json();
+
+                if (data.cod === 200) {
+                    const currentWeather = data.main;
+                    document.getElementById("cityName").textContent = cityName.charAt(0).toUpperCase() + cityName.slice(1);
+                    document.getElementById("weatherDetails").innerHTML = `Today ${getFormattedTime()}, ${
+                        data.weather[0].description
+                    }<br/>Humidity: <strong>${
+                        currentWeather.humidity
+                    }%</strong>, Wind: <strong>${data.wind.speed}km/h</strong>`;
+                    document.querySelector(".degree").textContent = currentWeather.temp;
+                    document.getElementById("weatherIcon").textContent = getWeatherEmoji(data.weather[0].main);
+
+                    // Remove previous raindrops
+                    const rain = document.getElementById('rain');
+                    rain.innerHTML = '';
+
+                    // Add new raindrops
+                    for (let i = 0; i < currentWeather.temp; i++) {
+                        const raindrop = document.createElement('div');
+                        raindrop.classList.add('raindrop');
+                        raindrop.style.left = `${Math.random() * 100}%`;
+                        raindrop.style.animationDuration = `${Math.random() * 2 + 1}s`;
+                        raindrop.textContent = getWeatherEmoji(data.weather[0].main);
+                        rain.appendChild(raindrop);
+                    }
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                alert(
+                    `Sorry, weather for ${cityName} is not available. ${error.message}`
+                );
+            }
+        }
+
+        function getFormattedTime() {
+            let now = new Date();
+            let days = [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+            ];
+            let day = days[now.getDay()];
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let ampm = hours >= 12 ? "PM" : "AM";
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            return `${day} ${hours}:${minutes} ${ampm}`;
+        }
+
+        function displayCurrentTime() {
+            let now = new Date();
+            document.getElementById("weatherDetails").innerHTML = `Today ${getFormattedTime()}, ${getWeatherDescription()}<br/>Humidity: <strong>87%</strong>, Wind: <strong>7.2km/h</strong>`;
+        }
+
+        function getWeatherEmoji(weather) {
+            switch (weather.toLowerCase()) {
+                case "clear":
+                    return "☀️";
+                case "clouds":
+                    return "☁️";
+                case "rain":
+                    return "🌧️";
+                case "drizzle":
+                    return "🌧️";
+                case "thunderstorm":
+                    return "⛈️";
+                case "snow":
+                    return "❄️";
+                default:
+                    return "☀️";
+            }
+        }
+    </script>
+</body>
+</html>
